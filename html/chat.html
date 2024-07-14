@@ -1,0 +1,175 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <title>Websocket Client</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <section class="chatbox">
+        <section class="chat-window">
+            
+        </section>
+        <div class="chat-input">
+            <input type="text" id="message-input" autocomplete="off" placeholder="Type a message" />
+            <button id="send-button">
+                <svg style="width:24px;height:24px" viewBox="0 0 24 24"><path fill="rgba(0,0,0,.38)" d="M17,12L12,17V14H8V10H12V7L17,12M21,16.5C21,16.88 20.79,17.21 20.47,17.38L12.57,21.82C12.41,21.94 12.21,22 12,22C11.79,22 11.59,21.94 11.43,21.82L3.53,17.38C3.21,17.21 3,16.88 3,16.5V7.5C3,7.12 3.21,6.79 3.53,6.62L11.43,2.18C11.59,2.06 11.79,2 12,2C12.21,2 12.41,2.06 12.57,2.18L20.47,6.62C20.79,6.79 21,7.12 21,7.5V16.5M12,4.15L5,8.09V15.91L12,19.85L19,15.91V8.09L12,4.15Z" /></svg>
+            </button>
+        </div>
+    </section>
+
+    <script>
+
+        document.addEventListener("DOMContentLoaded", function() {
+            var sendButton = document.getElementById("send-button");
+            messageInput.addEventListener("input", function() {
+                if (messageInput.value.trim() !== "") {
+                    sendButton.classList.add("active");
+                } else {
+                    sendButton.classList.remove("active");
+                }
+            });
+        });
+        var exampleSocket = new WebSocket("ws://localhost:2345");
+        exampleSocket.onopen = function (event) {
+            authentificate();
+        };
+        exampleSocket.onmessage = function (event) {
+            var data = JSON.parse(event.data);
+            console.log(data);
+            if (data.type === "message"){
+                newMessage(data.data, data.username, data.timestamp, data.id, false);
+            }
+            if (data.type === "auth"){
+                if (data.data === "success"){
+                    alert("Auth success");
+                } else {
+                    alert("Auth failed");
+                    authentificate();
+                }
+            }
+            if (data.type === "confirm"){
+                replaceMessageId(data.tempId, data.id);
+            }
+            
+        }
+
+        function replaceMessageId(tempId, id) {
+            var message = document.getElementById(tempId);
+            message.classList.remove("waiting");
+            message.id = id;
+        }
+
+        function authentificate() {
+            var username = prompt("Enter your username");
+            var password = prompt("Enter your password");
+            var obj = {
+                type: "auth",
+                data: {
+                    username: username,
+                    password: password
+                }
+            };
+            exampleSocket.send(JSON.stringify(obj));
+        }
+        
+        function purifyString(string) {
+            return string.replace(/<[^>]+>/g, '');
+        }
+
+        function sendMessageEvent() {
+            var message = messageInput.value.trim();
+            if (message === "") {
+                messageInput.value = "";
+                return;
+            }
+            var tempId = Math.random().toString(36).substr(2, 10);
+            var obj = {
+                type: "message",
+                data: message,
+                tempId: tempId
+            };
+            exampleSocket.send(JSON.stringify(obj));
+            newMessage(message, "", new Date().toISOString(), tempId, true);
+            messageInput.value = "";
+        }
+        var messageInput = document.getElementById("message-input");
+        
+        var sendButton = document.getElementById("send-button");
+        sendButton.addEventListener("click", function() {
+            sendMessageEvent();
+        });
+
+        messageInput.addEventListener("keydown", function(event) {
+            if (event.key === "Enter") {
+                sendMessageEvent();
+            }
+        });
+
+        function getTimeAgo(timestamp) {
+            var currentDate = new Date();
+            var previousDate = new Date(timestamp);
+            var timeDifference = currentDate.getTime() - previousDate.getTime();
+            var seconds = Math.floor(timeDifference / 1000);
+            var minutes = Math.floor(seconds / 60);
+            var hours = Math.floor(minutes / 60);
+            var days = Math.floor(hours / 24);
+            var months = Math.floor(days / 30);
+            var years = Math.floor(months / 12);
+
+            if (years > 0) {
+                return years + " year" + (years > 1 ? "s" : "") + " ago";
+            } else if (months > 0) {
+                return months + " month" + (months > 1 ? "s" : "") + " ago";
+            } else if (days > 0) {
+                return days + " day" + (days > 1 ? "s" : "") + " ago";
+            } else if (hours > 0) {
+                return hours + " hour" + (hours > 1 ? "s" : "") + " ago";
+            } else if (minutes > 0) {
+                return minutes + " minute" + (minutes > 1 ? "s" : "") + " ago";
+            } else {
+                return seconds + " second" + (seconds > 1 ? "s" : "") + " ago";
+            }
+        }
+
+        function newMessage(message, username, timestamp, id, mine=false) {
+            var chat = document.getElementsByClassName("chat-window").item(0);
+            var messageContainer = document.createElement("article");
+            messageContainer.classList.add("msg-container");
+            if (mine) {
+                messageContainer.classList.add("msg-self");
+            } else {
+                messageContainer.classList.add("msg-remote");
+            }
+            var timeAgo = getTimeAgo(timestamp);
+            timeAgo = getTimeAgo(timestamp);
+            //<img class="user-img" src="" />
+            messageContainer.innerHTML = `
+                <div class="msg-box waiting" id="${id}">
+                    <div class="flr">
+                        <div class="messages">
+                            <p class="msg">
+                                ${purifyString(message)}
+                            </p>
+                        </div>
+                        <span class="timestamp"><span class="username">${purifyString(username)}</span>&bull;<span class="posttime">${timeAgo}</span></span>
+                        <span class="created-at">${timestamp}</span>
+                    </div>
+                </div>
+            `;
+            chat.appendChild(messageContainer);
+        }
+
+        //update time every second
+        setInterval(function() {
+            var timestamps = document.getElementsByClassName("created-at");
+            var ShowedTimes = document.getElementsByClassName("posttime");
+            for (var i = 0; i < timestamps.length; i++) {
+                var timestamp = timestamps[i].textContent;
+                var timeAgo = getTimeAgo(timestamp);
+                ShowedTimes[i].textContent = timeAgo;
+            }
+        }, 1000);
+        
+    </script>
+</body>
+</html>
