@@ -46,9 +46,9 @@ def authenticateClient(data, socket)
     setClientValue(socket, "authenticated", true)
     clientId = list.find { |user| user["username"] == data["username"] }["id"]
     setClientValue(socket, "user_id", clientId)
-    client["socket"].send({ "type" => "auth", "data" => "success" }.to_json)
+    client["socket"].send({ "type" => "auth", "data" => "success", "username" => data["username"] }.to_json)
   else
-    client["socket"].send({ "type" => "auth", "data" => "fail" }.to_json)
+    client["socket"].send({ "type" => "auth", "data" => "fail", "username" => data["username"] }.to_json)
   end
 end
 
