@@ -57,7 +57,7 @@ def sendToAll(message, sender, tempMessageId = nil)
   senderName = getClientBySocket(sender)["username"]
   messageTime = getTime()
   begin
-    $SQLclient.query("INSERT INTO messages (user_id, message, created_at) VALUES (#{getClientBySocket(sender)["user_id"]}, '#{message}', '#{messageTime}');")
+    $SQLclient.query(`INSERT INTO messages (user_id, message, created_at) VALUES (#{getClientBySocket(sender)["user_id"]}, "#{message}", '#{messageTime}');`)
   rescue => exception 
     puts exception
     $SQLclient.query("INSERT INTO messages (user_id, message, created_at) VALUES (#{getClientBySocket(sender)["user_id"]}, 'this person messed with the database in some way idk', '#{messageTime}');")

@@ -57,7 +57,7 @@ post '/signup' do
     ]
   end
   p data["email"]
-  $SQLclient.query("INSERT INTO users (username, email, password) VALUES ('#{data["username"]}', '#{data["email"]}', '#{data["password"]}');")
+  $SQLclient.query(`INSERT INTO users (username, email, password) VALUES ("#{data["username"]}", "#{data["email"]}", "#{data["password"]}");`)
   return [
     200,
     { "Content-Type" => "application/json" },
@@ -73,6 +73,14 @@ get '/messages' do
     messages.to_a.to_json
   ]
 
+end
+
+get '/js/chat.js' do
+  return send_file "js/chat.js"
+end
+
+get '/js/signup.js' do
+  return send_file "js/signup.js"
 end
 
 Thread.start do
