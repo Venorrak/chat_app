@@ -12,6 +12,7 @@ require 'mysql2'
 
 $SQLclient = Mysql2::Client.new(:host => "localhost", :username => "chat", :password => "jsp")
 $SQLclient.query("USE chat_app;")
+$newMessageQuery = $SQLclient.prepare("INSERT INTO messages (user_id, message, created_at) VALUES (?, ?, ?);")
 
 def treatMessage(message, sender)
   # var obj = {
@@ -57,10 +58,10 @@ def sendToAll(message, sender, tempMessageId = nil)
   senderName = getClientBySocket(sender)["username"]
   messageTime = getTime()
   begin
-    $SQLclient.query(`INSERT INTO messages (user_id, message, created_at) VALUES (#{getClientBySocket(sender)["user_id"]}, "#{message}", '#{messageTime}');`)
+    $newMessageQuery.execute(getClientBySocket(sender)["user_id"], message, messageTime)
   rescue => exception 
     puts exception
-    $SQLclient.query("INSERT INTO messages (user_id, message, created_at) VALUES (#{getClientBySocket(sender)["user_id"]}, 'this person messed with the database in some way idk', '#{messageTime}');")
+    $newMessageQuery.execute(getClientBySocket(sender)["user_id"], "this person messed with the database in some way idk", messageTime)
   end
   $clients.each do |client|
     if client["socket"] != sender
